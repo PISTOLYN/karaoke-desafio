@@ -19,8 +19,6 @@ AZUL = (0, 0, 255)
 VERDE = (0, 255, 0)
 AMARILLO = (255, 255, 0)
 GRIS = (50, 50, 50)
-MORADO = (75, 0, 130)
-CIAN = (0, 255, 255)
 
 ANCHO, ALTO = 1280, 720
 pantalla = pygame.display.set_mode((ANCHO, ALTO))
@@ -31,7 +29,7 @@ fuente_titulo = pygame.font.SysFont("Arial", 50, bold=True)
 fuente_boton = pygame.font.SysFont("Arial", 24, bold=True)
 fuente_texto = pygame.font.SysFont("Arial", 30, bold=True)
 fuente_pequena = pygame.font.SysFont("Arial", 20, bold=True)
-fuente_puntaje = pygame.font.SysFont("Arial", 60, bold=True)
+fuente_puntaje = pygame.font.SysFont("Arial", 65, bold=True)
 fuente_calificador = pygame.font.SysFont("Arial", 120, bold=True)
 
 # Variables globales
@@ -41,6 +39,7 @@ config = {
     "numero_cancion": 1,
     "tiempo_actual": 0,
     "tiempo_total": 15,
+    "fondo_actual": "assets/fondo_juego.png", # <- AQUÍ CARGA TU SKIN
     "frase_calificacion": "El jurado dice:",
     "editando_texto": False,
     "texto_edicion": "",
@@ -111,8 +110,9 @@ def juego():
     cargando = True
     reloj = pygame.time.Clock()
     
-    boton_alexa = Boton(250, 50, 150, 50, "Leer Alexa", AZUL, activar_alexa)
-    boton_sig = Boton(650, 50, 100, 50, "Siguiente", AZUL, lambda: config.update({"numero_cancion": config["numero_cancion"] + 1}))
+    # Posiciones ajustadas para que no tapen la esfera ni los logos
+    boton_alexa = Boton(500, 50, 120, 40, "Leer Alexa", AZUL, activar_alexa)
+    boton_sig = Boton(630, 50, 100, 40, "Siguiente", AZUL, lambda: config.update({"numero_cancion": config["numero_cancion"] + 1}))
 
     while cargando:
         dt = reloj.tick(60) / 1000.0
@@ -122,6 +122,11 @@ def juego():
                 guardar_config()
                 pygame.quit()
                 sys.exit()
+
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if evento.button == 1:
+                    boton_alexa.click(evento.pos)
+                    boton_sig.click(evento.pos)
 
             if evento.type == pygame.KEYDOWN:
                 if config["editando_puntaje"]:
@@ -186,72 +191,51 @@ def juego():
                 config["valor_calificacion"] = random.randint(0, 10)
 
         # ==========================================
-        # DIBUJADO DEL SKIN BASE (Ya no depende de imágenes)
+        # DIBUJADO DEL SKIN
         # ==========================================
         
-        # Fondo general oscuro
-        pantalla.fill((20, 10, 40))
-
-        # Escenario de fondo (Simulación)
-        pygame.draw.rect(pantalla, (50, 20, 80), (100, 250, 1080, 450), border_radius=20)
-        pygame.draw.circle(pantalla, (0, 100, 200), (640, 450), 150) # Luces del centro
-        pygame.draw.circle(pantalla, (100, 0, 200), (640, 450), 100)
-
-        # Panel Superior (Alexa)
-        pygame.draw.rect(pantalla, (10, 30, 60), (200, 20, 880, 100), border_radius=15)
-        pygame.draw.rect(pantalla, CIAN, (200, 20, 880, 100), 3, border_radius=15)
-        
-        # Caja de Tiempo
-        pygame.draw.rect(pantalla, (60, 0, 0), (500, 130, 280, 40), border_radius=10)
-        pygame.draw.rect(pantalla, ROJO, (500, 130, 280, 40), 2, border_radius=10)
-        txt_t = fuente_boton.render("TIEMPO", True, BLANCO)
-        pantalla.blit(txt_t, (590, 135))
-
-        # Panel Equipo Rojo (Izquierda)
-        pygame.draw.rect(pantalla, (60, 10, 20), (20, 130, 250, 150), border_radius=15)
-        pygame.draw.rect(pantalla, (255, 50, 100), (20, 130, 250, 150), 3, border_radius=15)
-        txt_eq_r = fuente_boton.render("EQUIPO ROJO", True, BLANCO)
-        pantalla.blit(txt_eq_r, (60, 140))
-
-        # Panel Equipo Azul (Derecha)
-        pygame.draw.rect(pantalla, (10, 30, 60), (1010, 130, 250, 150), border_radius=15)
-        pygame.draw.rect(pantalla, (50, 150, 255), (1010, 130, 250, 150), 3, border_radius=15)
-        txt_eq_a = fuente_boton.render("EQUIPO AZUL", True, BLANCO)
-        pantalla.blit(txt_eq_a, (1050, 140))
+        try:
+            fondo_juego = pygame.image.load(config["fondo_actual"])
+            fondo_juego = pygame.transform.scale(fondo_juego, (ANCHO, ALTO))
+            pantalla.blit(fondo_juego, (0, 0))
+        except:
+            pantalla.fill(NEGRO) # Si no encuentra la imagen, fondo negro
 
         # Botones
         boton_alexa.dibujar(pantalla)
         boton_sig.dibujar(pantalla)
 
-        # Sintetizador animado
+        # Sintetizador animado (Ahora sale a la derecha de la palabra Alexa)
         if config["tiempo_actual"] > 0:
             for i in range(5):
                 altura = random.randint(10, 40) if pygame.time.get_ticks() % 200 < 100 else 10
-                pygame.draw.rect(pantalla, CIAN, (900 + i*15, 60, 10, altura))
-                pygame.draw.rect(pantalla, CIAN, (900 + i*15, 60 - altura, 10, altura))
+                pygame.draw.rect(pantalla, (0, 255, 255), (850 + i*15, 60, 10, altura))
+                pygame.draw.rect(pantalla, (0, 255, 255), (850 + i*15, 60 - altura, 10, altura))
 
-        # Marcadores
+        # Marcadores (Ajustados a las cajas negras de tu skin)
         color_rojo = AMARILLO if config["editando_puntaje"] == "rojo" else BLANCO
         color_azul = AMARILLO if config["editando_puntaje"] == "azul" else BLANCO
         
         txt_rojo = fuente_puntaje.render(str(config["puntaje_rojo"]), True, color_rojo)
-        pantalla.blit(txt_rojo, (120, 190))
+        rect_rojo = txt_rojo.get_rect(center=(200, 200)) # Centro caja roja
+        pantalla.blit(txt_rojo, rect_rojo)
         
         txt_azul = fuente_puntaje.render(str(config["puntaje_azul"]), True, color_azul)
-        pantalla.blit(txt_azul, (1110, 190))
+        rect_azul = txt_azul.get_rect(center=(1180, 200)) # Centro caja azul
+        pantalla.blit(txt_azul, rect_azul)
 
-        # Número de canción
+        # Número de canción (Al lado del 1 grande)
         txt_num = fuente_titulo.render(str(config["numero_cancion"]), True, BLANCO)
-        pantalla.blit(txt_num, (450, 40))
+        pantalla.blit(txt_num, (430, 50))
 
-        # Barra de tiempo
+        # Barra de tiempo (Debajo del reloj 0:05)
         if config["tiempo_actual"] > 0:
             porcentaje = config["tiempo_actual"] / config["tiempo_total"]
             ancho_barra = int(280 * porcentaje)
-            pygame.draw.rect(pantalla, GRIS, (500, 175, 280, 10))
-            pygame.draw.rect(pantalla, ROJO, (500, 175, ancho_barra, 10))
+            pygame.draw.rect(pantalla, (20, 50, 100), (380, 160, 280, 15)) # Fondo barra
+            pygame.draw.rect(pantalla, (50, 150, 255), (380, 160, ancho_barra, 15)) # Barra llenándose
 
-        # Calificador
+        # Calificador (Rueda de la fortuna)
         if config["calificando"]:
             pygame.draw.rect(pantalla, (0, 0, 0), (400, 250, 480, 250), border_radius=20)
             pygame.draw.rect(pantalla, AMARILLO, (400, 250, 480, 250), 5, border_radius=20)
@@ -297,4 +281,5 @@ def juego():
 
 if __name__ == "__main__":
     cargar_config()
+    if not os.path.exists("assets"): os.makedirs("assets")
     juego()
