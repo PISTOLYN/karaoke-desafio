@@ -28,11 +28,10 @@ fuente_titulo = pygame.font.SysFont("Arial", 50, bold=True)
 fuente_boton = pygame.font.SysFont("Arial", 24, bold=True)
 fuente_texto = pygame.font.SysFont("Arial", 30, bold=True)
 fuente_pequena = pygame.font.SysFont("Arial", 18, bold=True)
-fuente_puntaje = pygame.font.SysFont("Arial", 70, bold=True) # Un poco más pequeño para que encaje
+fuente_puntaje = pygame.font.SysFont("Arial", 55, bold=True) # Tamaño ajustado para que quepa bien
 
-# Variables globales
 config = {
-    "modo_pulsadores": False, # Iniciamos sin pulsadores para que se vea limpio tu skin
+    "modo_pulsadores": False,
     "puntaje_azul": 0,
     "puntaje_rojo": 0,
     "numero_cancion": 1,
@@ -65,7 +64,7 @@ def hablar_alexa(texto):
         print(f"Error al reproducir la voz: {e}")
 
 def activar_alexa():
-    config["tiempo_actual"] = 15 # 15 segundos de tiempo
+    config["tiempo_actual"] = 15
     ruta_texto = "textos_alexa/alexa.txt"
     if os.path.exists(ruta_texto):
         with open(ruta_texto, "r", encoding="utf-8") as f:
@@ -149,7 +148,6 @@ def juego():
     cargando = True
     reloj = pygame.time.Clock()
     
-    # Posiciones de los botones (si se activan)
     boton_alexa = Boton(250, 50, 120, 50, "Alexa", AZUL, activar_alexa)
     boton_cancion = Boton(650, 50, 100, 50, "Siguiente", AZUL, accion_cancion)
     
@@ -176,7 +174,6 @@ def juego():
                     boton_cancion.click(evento.pos)
                     
             if evento.type == pygame.KEYDOWN:
-                # --- MENÚ DE PUNTAJE (Calificador 0-10) ---
                 if config["menu_puntaje"] is not None:
                     if evento.key == pygame.K_UP:
                         config["valor_puntaje"] = min(10, config["valor_puntaje"] + 1)
@@ -194,7 +191,6 @@ def juego():
                         config["menu_puntaje"] = None
                     continue
 
-                # --- MENÚ DE CONFIGURACIÓN (M) ---
                 if evento.key == pygame.K_m and not editando_texto_alexa:
                     config["editando"] = not config["editando"]
                 
@@ -237,17 +233,16 @@ def juego():
                     elif evento.key == pygame.K_ESCAPE:
                         config["editando"] = False
                 else:
-                    # --- CONTROLES EN JUEGO ---
                     if evento.key == config["tecla_play"]:
                         reproducir_reiniciar_musica()
                     if evento.key == pygame.K_a:
                         activar_alexa()
                     elif evento.key == pygame.K_s:
                         accion_cancion()
-                    elif evento.key == pygame.K_q: # Tecla Q para Equipo ROJO
+                    elif evento.key == pygame.K_q: 
                         config["menu_puntaje"] = 'rojo'
                         config["valor_puntaje"] = 0
-                    elif evento.key == pygame.K_e: # Tecla E para Equipo AZUL
+                    elif evento.key == pygame.K_e: 
                         config["menu_puntaje"] = 'azul'
                         config["valor_puntaje"] = 0
 
@@ -256,13 +251,11 @@ def juego():
             if config["tiempo_actual"] < 0:
                 config["tiempo_actual"] = 0
 
-        # --- DIBUJADO ---
         if fondo_juego:
             pantalla.blit(fondo_juego, (0, 0))
         else:
             pantalla.fill(NEGRO)
 
-        # Logos (si no están en la imagen de fondo, se dibujan aquí)
         try:
             logo_k = pygame.image.load(config["logo_karaoke"])
             logo_k = pygame.transform.scale(logo_k, (200, 80))
@@ -276,27 +269,32 @@ def juego():
             boton_alexa.dibujar(pantalla)
             boton_cancion.dibujar(pantalla)
 
-        # --- NÚMEROS DE PUNTAJE (Ajustados a las cajas negras de tu nueva imagen) ---
-        # Equipo Azul (Derecha)
-        texto_azul = fuente_puntaje.render(str(config["puntaje_azul"]), True, BLANCO)
-        # X=1160, Y=150 para que quede centrado en el cuadro negro de la derecha
-        pantalla.blit(texto_azul, (1150, 150)) 
-
-        # Equipo Rojo (Izquierda)
+        # --- POSICIONES CORREGIDAS ---
+        
+        # Puntaje Equipo Rojo (Caja Izquierda)
         texto_rojo = fuente_puntaje.render(str(config["puntaje_rojo"]), True, BLANCO)
-        # X=120, Y=150 para que quede centrado en el cuadro negro de la izquierda
-        pantalla.blit(texto_rojo, (120, 150))
+        # Calculamos el centro de la caja negra izquierda y lo dibujamos ahí
+        rect_rojo = texto_rojo.get_rect(center=(180, 190)) 
+        pantalla.blit(texto_rojo, rect_rojo)
 
-        # --- NÚMERO DE CANCIÓN ---
+        # Puntaje Equipo Azul (Caja Derecha)
+        texto_azul = fuente_puntaje.render(str(config["puntaje_azul"]), True, BLANCO)
+        # Calculamos el centro de la caja negra derecha
+        rect_azul = texto_azul.get_rect(center=(1175, 190))
+        pantalla.blit(texto_azul, rect_azul)
+
+        # Número de Canción (Junto a Alexa)
         texto_num = fuente_titulo.render(str(config["numero_cancion"]), True, BLANCO)
-        pantalla.blit(texto_num, (480, 40))
+        # Lo movemos un poco a la derecha y arriba para que no choque con la esfera
+        pantalla.blit(texto_num, (500, 50))
 
-        # --- TIEMPO (Ajustado justo debajo del reloj 0:05) ---
+        # Tiempo (Debajo del reloj 0:05)
         if config["tiempo_actual"] > 0:
             texto_tiempo = fuente_texto.render(f"TIEMPO: {int(config['tiempo_actual'])}s", True, ROJO)
-            pantalla.blit(texto_tiempo, (420, 150))
+            # Lo posicionamos justo debajo del reloj azul
+            pantalla.blit(texto_tiempo, (360, 155))
 
-        # --- DIBUJAR MENÚ DE PUNTAJE (Calificador) ---
+        # --- DIBUJAR MENÚ DE PUNTAJE ---
         if config["menu_puntaje"] is not None:
             pygame.draw.rect(pantalla, (0, 0, 0), (400, 200, 480, 300))
             pygame.draw.rect(pantalla, AMARILLO, (400, 200, 480, 300), 5)
