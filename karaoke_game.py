@@ -25,8 +25,10 @@ pantalla = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("Karaoke Desafío Musical")
 
 # Fuentes
-fuente_titulo = pygame.font.SysFont("Arial", 50, bold=True)
-fuente_boton = pygame.font.SysFont("Arial", 24, bold=True)
+fuente_titulo = pygame.font.SysFont("Arial", 40, bold=True)
+fuente_boton = pygame.font.SysFont("Arial", 26, bold=True)
+fuente_opcion = pygame.font.SysFont("Arial", 24, bold=True) # Texto amarillo
+fuente_num_opcion = pygame.font.SysFont("Arial", 28, bold=True) # Números rojos
 fuente_texto = pygame.font.SysFont("Arial", 30, bold=True)
 fuente_pequena = pygame.font.SysFont("Arial", 20, bold=True)
 fuente_puntaje = pygame.font.SysFont("Arial", 65, bold=True)
@@ -39,7 +41,7 @@ config = {
     "numero_cancion": 1,
     "tiempo_actual": 0,
     "tiempo_total": 15,
-    "fondo_actual": "assets/fondo_juego.png", # <- AQUÍ CARGA TU SKIN
+    "fondo_actual": "assets/fondo_juego.png",
     "frase_calificacion": "El jurado dice:",
     "editando_texto": False,
     "texto_edicion": "",
@@ -88,7 +90,7 @@ def cargar_config():
         with open("config.json", "r") as f:
             config.update(json.load(f))
 
-# --- CLASE BOTÓN ---
+# --- CLASE BOTÓN (Para el juego, no para el menú) ---
 class Boton:
     def __init__(self, x, y, w, h, texto, color, accion):
         self.rect = pygame.Rect(x, y, w, h)
@@ -110,7 +112,6 @@ def juego():
     cargando = True
     reloj = pygame.time.Clock()
     
-    # Posiciones ajustadas para que no tapen la esfera ni los logos
     boton_alexa = Boton(500, 50, 120, 40, "Leer Alexa", AZUL, activar_alexa)
     boton_sig = Boton(630, 50, 100, 40, "Siguiente", AZUL, lambda: config.update({"numero_cancion": config["numero_cancion"] + 1}))
 
@@ -124,7 +125,7 @@ def juego():
                 sys.exit()
 
             if evento.type == pygame.MOUSEBUTTONDOWN:
-                if evento.button == 1:
+                if evento.button == 1 and not config["menu_activo"]:
                     boton_alexa.click(evento.pos)
                     boton_sig.click(evento.pos)
 
@@ -152,18 +153,28 @@ def juego():
                         config["texto_edicion"] += evento.unicode
                     continue
 
+                # --- ABRIR/CERRAR MENÚ ---
                 if evento.key == pygame.K_m:
                     config["menu_activo"] = not config["menu_activo"]
                 
                 if config["menu_activo"]:
-                    if evento.key == pygame.K_3: 
+                    if evento.key == pygame.K_1: # Skins / Cambiar fondo
+                        root = Tk(); root.withdraw()
+                        arch = filedialog.askopenfilename(title="Seleccionar Fondo", filetypes=[("Imágenes", "*.png *.jpg")])
+                        if arch: config["fondo_actual"] = arch; guardar_config()
+                    elif evento.key == pygame.K_3: # Sonidos (Próximamente)
+                        pass
+                    elif evento.key == pygame.K_4: # Editar preguntas / Frase
                         config["editando_texto"] = True
                         config["texto_edicion"] = config["frase_calificacion"]
-                    elif evento.key == pygame.K_7: 
+                    elif evento.key == pygame.K_5: # Cerrar Menú
+                        config["menu_activo"] = False
+                    elif evento.key == pygame.K_6: # Apagar PC
                         pygame.quit()
                         sys.exit()
                     continue
 
+                # --- CONTROLES DE JUEGO ---
                 if evento.key == pygame.K_c: 
                     calificar_aleatorio()
                 elif evento.key == pygame.K_q and config["calificando"]:
@@ -191,51 +202,48 @@ def juego():
                 config["valor_calificacion"] = random.randint(0, 10)
 
         # ==========================================
-        # DIBUJADO DEL SKIN
+        # DIBUJADO DEL JUEGO
         # ==========================================
-        
         try:
             fondo_juego = pygame.image.load(config["fondo_actual"])
             fondo_juego = pygame.transform.scale(fondo_juego, (ANCHO, ALTO))
             pantalla.blit(fondo_juego, (0, 0))
         except:
-            pantalla.fill(NEGRO) # Si no encuentra la imagen, fondo negro
+            pantalla.fill(NEGRO)
 
-        # Botones
-        boton_alexa.dibujar(pantalla)
-        boton_sig.dibujar(pantalla)
+        if not config["menu_activo"]:
+            boton_alexa.dibujar(pantalla)
+            boton_sig.dibujar(pantalla)
 
-        # Sintetizador animado (Ahora sale a la derecha de la palabra Alexa)
+        # Sintetizador
         if config["tiempo_actual"] > 0:
             for i in range(5):
                 altura = random.randint(10, 40) if pygame.time.get_ticks() % 200 < 100 else 10
                 pygame.draw.rect(pantalla, (0, 255, 255), (850 + i*15, 60, 10, altura))
                 pygame.draw.rect(pantalla, (0, 255, 255), (850 + i*15, 60 - altura, 10, altura))
 
-        # Marcadores (Ajustados a las cajas negras de tu skin)
+        # Marcadores
         color_rojo = AMARILLO if config["editando_puntaje"] == "rojo" else BLANCO
         color_azul = AMARILLO if config["editando_puntaje"] == "azul" else BLANCO
         
         txt_rojo = fuente_puntaje.render(str(config["puntaje_rojo"]), True, color_rojo)
-        rect_rojo = txt_rojo.get_rect(center=(200, 200)) # Centro caja roja
-        pantalla.blit(txt_rojo, rect_rojo)
+        pantalla.blit(txt_rojo, txt_rojo.get_rect(center=(200, 200)))
         
         txt_azul = fuente_puntaje.render(str(config["puntaje_azul"]), True, color_azul)
-        rect_azul = txt_azul.get_rect(center=(1180, 200)) # Centro caja azul
-        pantalla.blit(txt_azul, rect_azul)
+        pantalla.blit(txt_azul, txt_azul.get_rect(center=(1180, 200)))
 
-        # Número de canción (Al lado del 1 grande)
+        # Número de canción
         txt_num = fuente_titulo.render(str(config["numero_cancion"]), True, BLANCO)
         pantalla.blit(txt_num, (430, 50))
 
-        # Barra de tiempo (Debajo del reloj 0:05)
+        # Barra de tiempo
         if config["tiempo_actual"] > 0:
             porcentaje = config["tiempo_actual"] / config["tiempo_total"]
             ancho_barra = int(280 * porcentaje)
-            pygame.draw.rect(pantalla, (20, 50, 100), (380, 160, 280, 15)) # Fondo barra
-            pygame.draw.rect(pantalla, (50, 150, 255), (380, 160, ancho_barra, 15)) # Barra llenándose
+            pygame.draw.rect(pantalla, (20, 50, 100), (380, 160, 280, 15))
+            pygame.draw.rect(pantalla, (50, 150, 255), (380, 160, ancho_barra, 15))
 
-        # Calificador (Rueda de la fortuna)
+        # Calificador
         if config["calificando"]:
             pygame.draw.rect(pantalla, (0, 0, 0), (400, 250, 480, 250), border_radius=20)
             pygame.draw.rect(pantalla, AMARILLO, (400, 250, 480, 250), 5, border_radius=20)
@@ -249,33 +257,69 @@ def juego():
             txt_ins = fuente_pequena.render("Presiona Q (Rojo) o E (Azul) para asignar", True, VERDE)
             pantalla.blit(txt_ins, (450, 460))
 
-        # Menú Principal (M)
+        # ==========================================
+        # DIBUJADO DEL MENÚ TIPO "100 MEXICANOS"
+        # ==========================================
         if config["menu_activo"]:
-            pygame.draw.rect(pantalla, (20, 20, 20), (150, 100, 980, 500))
-            pygame.draw.rect(pantalla, BLANCO, (150, 100, 980, 500), 3)
-            
-            opciones = [
-                "[1] Logotipos (Próximamente)",
-                "[2] Cambiar Fondo (Próximamente)",
-                "[3] Editar Frase de Calificación",
-                "[4] Sonidos (Próximamente)",
-                "[5] Visualización (Próximamente)",
-                "[6] Configurar Teclado",
-                "[7] CERRAR PROGRAMA",
-                "[8] Editor de Canciones y Textos"
-            ]
-            
-            for i, txt in enumerate(opciones):
-                color_txt = ROJO if i == 6 else BLANCO
-                if i == 7: color_txt = AMARILLO
-                render = fuente_boton.render(txt, True, color_txt)
-                pantalla.blit(render, (200, 150 + i*50))
+            # Fondo oscuro semitransparente
+            s = pygame.Surface((ANCHO, ALTO))
+            s.set_alpha(200)
+            s.fill((0, 0, 0))
+            pantalla.blit(s, (0, 0))
 
+            # Panel principal
+            panel_rect = pygame.Rect(240, 50, 800, 620)
+            pygame.draw.rect(pantalla, (10, 30, 60), panel_rect, border_radius=20)
+            pygame.draw.rect(pantalla, AMARILLO, panel_rect, 4, border_radius=20)
+
+            # Título
+            txt_titulo = fuente_titulo.render("MENU DE CONFIGURACION DE KARAOKE", True, BLANCO)
+            pantalla.blit(txt_titulo, txt_titulo.get_rect(center=(ANCHO//2, 90)))
+
+            # Opciones del menú
+            opciones = [
+                ("1", "SKINS / CAMBIAR FONDO"),
+                ("2", "CONFIGURAR TECLADO (PRÓXIMAMENTE)"),
+                ("3", "SONIDOS (PRÓXIMAMENTE)"),
+                ("4", "EDITAR FRASE DEL JURADO"),
+                ("5", "CERRAR MENÚ"),
+                ("6", "APAGAR PC")
+            ]
+
+            y_offset = 160
+            for num, texto in opciones:
+                # Botón píldora
+                btn_rect = pygame.Rect(280, y_offset, 720, 65)
+                pygame.draw.rect(pantalla, (5, 15, 40), btn_rect, border_radius=30)
+                
+                # Borde del botón (amarillo si es la opción de apagar, azul claro para las demás)
+                color_borde = ROJO if num == "6" else (50, 150, 255)
+                pygame.draw.rect(pantalla, color_borde, btn_rect, 3, border_radius=30)
+
+                # Círculo del número
+                pygame.draw.circle(pantalla, (150, 20, 20), (320, y_offset + 32), 22)
+                pygame.draw.circle(pantalla, AMARILLO, (320, y_offset + 32), 22, 2)
+                
+                # Número
+                txt_num = fuente_num_opcion.render(num, True, BLANCO)
+                pantalla.blit(txt_num, txt_num.get_rect(center=(320, y_offset + 32)))
+
+                # Texto de la opción
+                txt_opc = fuente_opcion.render(texto, True, AMARILLO)
+                pantalla.blit(txt_opc, (370, y_offset + 18))
+
+                y_offset += 80
+
+            # Instrucciones inferiores
+            txt_inst = fuente_pequena.render("Presiona el número de la opción que deseas", True, BLANCO)
+            pantalla.blit(txt_inst, txt_inst.get_rect(center=(ANCHO//2, 650)))
+
+            # Caja de edición de texto (si está activa)
             if config["editando_texto"]:
-                pygame.draw.rect(pantalla, (0, 0, 100), (200, 580, 880, 60))
-                pygame.draw.rect(pantalla, AMARILLO, (200, 580, 880, 60), 2)
-                txt_actual = fuente_boton.render(config["texto_edicion"] + "|", True, AMARILLO)
-                pantalla.blit(txt_actual, (220, 590))
+                pygame.draw.rect(pantalla, (0, 0, 0), (200, 200, 880, 60))
+                pygame.draw.rect(pantalla, AMARILLO, (200, 200, 880, 60), 2)
+                txt_actual = fuente_boton.render("Escribe y presiona ENTER: " + config["texto_edicion"] + "|", True, AMARILLO)
+                pantalla.blit(txt_actual, (220, 215))
 
         pygame.display.flip()
 
