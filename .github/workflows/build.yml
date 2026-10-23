@@ -1,51 +1,46 @@
-name: Compilar EXE (Windows)
+name: Compilar y Publicar Juego
 
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches: [ "main" ]
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
+    - name: Descargar el código
+      uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-      - name: Instalar dependencias
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Asegurar carpeta assets
-        run: New-Item -ItemType Directory -Force assets | Out-Null
+    - name: Compilar con PyInstaller
+      run: |
+        pyinstaller --onefile --windowed --add-data "assets;assets" --name "KaraokeDesafio" karaoke_game.py
 
-      - name: Compilar con PyInstaller
-        run: >
-          pyinstaller --noconfirm --onefile --windowed
-          --name KaraokeDesafio
-          --add-data "assets;assets"
-          --collect-all edge_tts
-          --hidden-import pyttsx3.drivers
-          --hidden-import pyttsx3.drivers.sapi5
-          karaoke_game.py
+    - name: Empaquetar el Juego con sus carpetas
+      run: |
+        mkdir Entrega
+        copy dist\KaraokeDesafio.exe Entrega\
+        xcopy assets Entrega\assets\ /E /I
+        mkdir Entrega\pistas
+        mkdir Entrega\textos_alexa
+        Compress-Archive -Path Entrega\* -DestinationPath KaraokeDesafio-Completo.zip
 
-      - name: Subir EXE como artefacto
-        uses: actions/upload-artifact@v4
-        with:
-          name: KaraokeDesafio-Windows
-          path: dist/KaraokeDesafio.exe
-
-      - name: Publicar release (solo con tags v*)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/KaraokeDesafio.exe
+    - name: Publicar en Releases
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v1.0.${{ github.run_number }}
+        name: Karaoke Desafío ${{ github.run_number }}
+        files: KaraokeDesafio-Completo.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
