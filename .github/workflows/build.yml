@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-# ESTA LÍNEA ES CRUCIAL: Permite que el flujo de trabajo cree Releases
+# ESTO ES LO QUE FALTABA: Permiso explícito para crear Releases
 permissions:
   contents: write
 
@@ -32,13 +32,14 @@ jobs:
         pyinstaller --onefile --windowed --add-data "assets;assets" --name "KaraokeDesafio" karaoke_game.py
 
     - name: Empaquetar el Juego con sus carpetas
+      shell: powershell # Forzamos PowerShell para que Compress-Archive funcione bien
       run: |
-        mkdir Entrega
-        copy dist\KaraokeDesafio.exe Entrega\
-        xcopy assets Entrega\assets\ /E /I
-        mkdir Entrega\pistas
-        mkdir Entrega\textos_alexa
-        Compress-Archive -Path Entrega\* -DestinationPath KaraokeDesafio-Completo.zip
+        New-Item -ItemType Directory -Force -Path "Entrega"
+        Copy-Item -Path "dist\KaraokeDesafio.exe" -Destination "Entrega\"
+        Copy-Item -Path "assets" -Destination "Entrega\assets" -Recurse -Force
+        New-Item -ItemType Directory -Force -Path "Entrega\pistas"
+        New-Item -ItemType Directory -Force -Path "Entrega\textos_alexa"
+        Compress-Archive -Path "Entrega\*" -DestinationPath "KaraokeDesafio-Completo.zip" -Force
 
     - name: Publicar en Releases
       uses: softprops/action-gh-release@v2
