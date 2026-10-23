@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-# ESTA ES LA SOLUCIÓN: Damos permiso de escritura para crear Releases
+# ESTA LÍNEA ES CRUCIAL: Permite que el flujo de trabajo cree Releases
 permissions:
   contents: write
 
