@@ -5,6 +5,10 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+# ESTA ES LA SOLUCIÓN: Damos permiso de escritura para crear Releases
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -37,7 +41,7 @@ jobs:
         Compress-Archive -Path Entrega\* -DestinationPath KaraokeDesafio-Completo.zip
 
     - name: Publicar en Releases
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v1.0.${{ github.run_number }}
         name: Karaoke Desafío ${{ github.run_number }}
