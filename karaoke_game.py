@@ -19,6 +19,8 @@ AZUL = (0, 0, 255)
 VERDE = (0, 255, 0)
 AMARILLO = (255, 255, 0)
 GRIS = (50, 50, 50)
+MORADO = (75, 0, 130)
+CIAN = (0, 255, 255)
 
 ANCHO, ALTO = 1280, 720
 pantalla = pygame.display.set_mode((ANCHO, ALTO))
@@ -39,16 +41,11 @@ config = {
     "numero_cancion": 1,
     "tiempo_actual": 0,
     "tiempo_total": 15,
-    "fondo_actual": "assets/fondo_juego.png",
-    "logo_karaoke": "assets/logo_karaoke.png",
-    "logo_desafios": "assets/logo_desafios.png",
     "frase_calificacion": "El jurado dice:",
-    "editando": False,
     "editando_texto": False,
     "texto_edicion": "",
-    "editando_puntaje": None, # 'rojo' o 'azul'
+    "editando_puntaje": None, 
     "menu_activo": False,
-    "canciones": [], # Lista de dicts: {"texto": "...", "mp3": "ruta"}
     "calificando": False,
     "valor_calificacion": 0,
     "tiempo_animacion": 0
@@ -72,15 +69,8 @@ def hablar_alexa(texto, es_calificacion=False):
         print(f"Error de voz: {e}")
 
 def activar_alexa():
-    cancion_actual = config["canciones"][config["numero_cancion"] - 1] if config["canciones"] else None
-    if not cancion_actual:
-        return
-    
-    threading.Thread(target=hablar_alexa, args=(cancion_actual["texto"],)).start()
-    
-    if cancion_actual["mp3"] and os.path.exists(cancion_actual["mp3"]):
-        pygame.mixer.music.load(cancion_actual["mp3"])
-        pygame.mixer.music.play()
+    texto = f"Alexa, di la canción número {config['numero_cancion']}"
+    threading.Thread(target=hablar_alexa, args=(texto,)).start()
 
 def calificar_aleatorio():
     config["calificando"] = True
@@ -98,13 +88,6 @@ def cargar_config():
     if os.path.exists("config.json"):
         with open("config.json", "r") as f:
             config.update(json.load(f))
-    if os.path.exists("canciones.json"):
-        with open("canciones.json", "r") as f:
-            config["canciones"] = json.load(f)
-
-def guardar_canciones():
-    with open("canciones.json", "w") as f:
-        json.dump(config["canciones"], f)
 
 # --- CLASE BOTÓN ---
 class Boton:
@@ -133,17 +116,10 @@ def juego():
 
     while cargando:
         dt = reloj.tick(60) / 1000.0
-        
-        try:
-            fondo_juego = pygame.image.load(config["fondo_actual"])
-            fondo_juego = pygame.transform.scale(fondo_juego, (ANCHO, ALTO))
-        except:
-            fondo_juego = None
 
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 guardar_config()
-                guardar_canciones()
                 pygame.quit()
                 sys.exit()
 
@@ -175,21 +151,9 @@ def juego():
                     config["menu_activo"] = not config["menu_activo"]
                 
                 if config["menu_activo"]:
-                    if evento.key == pygame.K_1: 
-                        root = Tk(); root.withdraw()
-                        arch = filedialog.askopenfilename(title="Seleccionar Logo Karaoke", filetypes=[("Imágenes", "*.png *.jpg")])
-                        if arch: config["logo_karaoke"] = arch; guardar_config()
-                        arch2 = filedialog.askopenfilename(title="Seleccionar Logo Desafíos", filetypes=[("Imágenes", "*.png *.jpg")])
-                        if arch2: config["logo_desafios"] = arch2; guardar_config()
-                    elif evento.key == pygame.K_2: 
-                        root = Tk(); root.withdraw()
-                        arch = filedialog.askopenfilename(title="Seleccionar Fondo", filetypes=[("Imágenes", "*.png *.jpg")])
-                        if arch: config["fondo_actual"] = arch; guardar_config()
-                    elif evento.key == pygame.K_3: 
+                    if evento.key == pygame.K_3: 
                         config["editando_texto"] = True
                         config["texto_edicion"] = config["frase_calificacion"]
-                    elif evento.key == pygame.K_8: 
-                        pass 
                     elif evento.key == pygame.K_7: 
                         pygame.quit()
                         sys.exit()
@@ -221,44 +185,73 @@ def juego():
             if int(config["tiempo_animacion"] * 10) % 2 == 0:
                 config["valor_calificacion"] = random.randint(0, 10)
 
-        if fondo_juego:
-            pantalla.blit(fondo_juego, (0, 0))
-        else:
-            pantalla.fill(GRIS)
+        # ==========================================
+        # DIBUJADO DEL SKIN BASE (Ya no depende de imágenes)
+        # ==========================================
+        
+        # Fondo general oscuro
+        pantalla.fill((20, 10, 40))
 
-        try:
-            logo_k = pygame.image.load(config["logo_karaoke"])
-            logo_k = pygame.transform.scale(logo_k, (200, 80))
-            pantalla.blit(logo_k, (20, 20))
-            logo_d = pygame.image.load(config["logo_desafios"])
-            logo_d = pygame.transform.scale(logo_d, (150, 150))
-            pantalla.blit(logo_d, (1110, 20))
-        except: pass
+        # Escenario de fondo (Simulación)
+        pygame.draw.rect(pantalla, (50, 20, 80), (100, 250, 1080, 450), border_radius=20)
+        pygame.draw.circle(pantalla, (0, 100, 200), (640, 450), 150) # Luces del centro
+        pygame.draw.circle(pantalla, (100, 0, 200), (640, 450), 100)
 
+        # Panel Superior (Alexa)
+        pygame.draw.rect(pantalla, (10, 30, 60), (200, 20, 880, 100), border_radius=15)
+        pygame.draw.rect(pantalla, CIAN, (200, 20, 880, 100), 3, border_radius=15)
+        
+        # Caja de Tiempo
+        pygame.draw.rect(pantalla, (60, 0, 0), (500, 130, 280, 40), border_radius=10)
+        pygame.draw.rect(pantalla, ROJO, (500, 130, 280, 40), 2, border_radius=10)
+        txt_t = fuente_boton.render("TIEMPO", True, BLANCO)
+        pantalla.blit(txt_t, (590, 135))
+
+        # Panel Equipo Rojo (Izquierda)
+        pygame.draw.rect(pantalla, (60, 10, 20), (20, 130, 250, 150), border_radius=15)
+        pygame.draw.rect(pantalla, (255, 50, 100), (20, 130, 250, 150), 3, border_radius=15)
+        txt_eq_r = fuente_boton.render("EQUIPO ROJO", True, BLANCO)
+        pantalla.blit(txt_eq_r, (60, 140))
+
+        # Panel Equipo Azul (Derecha)
+        pygame.draw.rect(pantalla, (10, 30, 60), (1010, 130, 250, 150), border_radius=15)
+        pygame.draw.rect(pantalla, (50, 150, 255), (1010, 130, 250, 150), 3, border_radius=15)
+        txt_eq_a = fuente_boton.render("EQUIPO AZUL", True, BLANCO)
+        pantalla.blit(txt_eq_a, (1050, 140))
+
+        # Botones
+        boton_alexa.dibujar(pantalla)
+        boton_sig.dibujar(pantalla)
+
+        # Sintetizador animado
         if config["tiempo_actual"] > 0:
             for i in range(5):
                 altura = random.randint(10, 40) if pygame.time.get_ticks() % 200 < 100 else 10
-                pygame.draw.rect(pantalla, (0, 255, 255), (900 + i*15, 60, 10, altura))
-                pygame.draw.rect(pantalla, (0, 255, 255), (900 + i*15, 60 - altura, 10, altura))
+                pygame.draw.rect(pantalla, CIAN, (900 + i*15, 60, 10, altura))
+                pygame.draw.rect(pantalla, CIAN, (900 + i*15, 60 - altura, 10, altura))
 
+        # Marcadores
         color_rojo = AMARILLO if config["editando_puntaje"] == "rojo" else BLANCO
         color_azul = AMARILLO if config["editando_puntaje"] == "azul" else BLANCO
         
         txt_rojo = fuente_puntaje.render(str(config["puntaje_rojo"]), True, color_rojo)
-        pantalla.blit(txt_rojo, (120, 150))
+        pantalla.blit(txt_rojo, (120, 190))
         
         txt_azul = fuente_puntaje.render(str(config["puntaje_azul"]), True, color_azul)
-        pantalla.blit(txt_azul, (1150, 150))
+        pantalla.blit(txt_azul, (1110, 190))
 
+        # Número de canción
         txt_num = fuente_titulo.render(str(config["numero_cancion"]), True, BLANCO)
-        pantalla.blit(txt_num, (500, 50))
+        pantalla.blit(txt_num, (450, 40))
 
+        # Barra de tiempo
         if config["tiempo_actual"] > 0:
             porcentaje = config["tiempo_actual"] / config["tiempo_total"]
-            ancho_barra = int(300 * porcentaje)
-            pygame.draw.rect(pantalla, GRIS, (360, 180, 300, 15))
-            pygame.draw.rect(pantalla, ROJO, (360, 180, ancho_barra, 15))
+            ancho_barra = int(280 * porcentaje)
+            pygame.draw.rect(pantalla, GRIS, (500, 175, 280, 10))
+            pygame.draw.rect(pantalla, ROJO, (500, 175, ancho_barra, 10))
 
+        # Calificador
         if config["calificando"]:
             pygame.draw.rect(pantalla, (0, 0, 0), (400, 250, 480, 250), border_radius=20)
             pygame.draw.rect(pantalla, AMARILLO, (400, 250, 480, 250), 5, border_radius=20)
@@ -272,13 +265,14 @@ def juego():
             txt_ins = fuente_pequena.render("Presiona Q (Rojo) o E (Azul) para asignar", True, VERDE)
             pantalla.blit(txt_ins, (450, 460))
 
+        # Menú Principal (M)
         if config["menu_activo"]:
             pygame.draw.rect(pantalla, (20, 20, 20), (150, 100, 980, 500))
             pygame.draw.rect(pantalla, BLANCO, (150, 100, 980, 500), 3)
             
             opciones = [
-                "[1] Logotipos (Karaoke / Desafíos)",
-                "[2] Cambiar Fondo",
+                "[1] Logotipos (Próximamente)",
+                "[2] Cambiar Fondo (Próximamente)",
                 "[3] Editar Frase de Calificación",
                 "[4] Sonidos (Próximamente)",
                 "[5] Visualización (Próximamente)",
@@ -303,5 +297,4 @@ def juego():
 
 if __name__ == "__main__":
     cargar_config()
-    if not os.path.exists("assets"): os.makedirs("assets")
     juego()
