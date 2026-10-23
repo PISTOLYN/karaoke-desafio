@@ -18,20 +18,21 @@ ROJO = (255, 0, 0)
 AZUL = (0, 0, 255)
 VERDE = (0, 255, 0)
 AMARILLO = (255, 255, 0)
-GRIS = (100, 100, 100)
 
 ANCHO, ALTO = 1280, 720
 pantalla = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("Karaoke Desafío Musical")
 
+# Fuentes
 fuente_titulo = pygame.font.SysFont("Arial", 50, bold=True)
 fuente_boton = pygame.font.SysFont("Arial", 24, bold=True)
 fuente_texto = pygame.font.SysFont("Arial", 30, bold=True)
 fuente_pequena = pygame.font.SysFont("Arial", 18, bold=True)
-fuente_puntaje = pygame.font.SysFont("Arial", 80, bold=True)
+fuente_puntaje = pygame.font.SysFont("Arial", 70, bold=True) # Un poco más pequeño para que encaje
 
+# Variables globales
 config = {
-    "modo_pulsadores": True,
+    "modo_pulsadores": False, # Iniciamos sin pulsadores para que se vea limpio tu skin
     "puntaje_azul": 0,
     "puntaje_rojo": 0,
     "numero_cancion": 1,
@@ -44,7 +45,7 @@ config = {
     "fondo_actual": "assets/fondo_juego.png",
     "logo_karaoke": "assets/logo_karaoke.png",
     "logo_desafios": "assets/logo_desafios.png",
-    "menu_puntaje": None, # None, 'azul' o 'rojo'
+    "menu_puntaje": None, 
     "valor_puntaje": 0
 }
 
@@ -64,7 +65,7 @@ def hablar_alexa(texto):
         print(f"Error al reproducir la voz: {e}")
 
 def activar_alexa():
-    config["tiempo_actual"] = 10
+    config["tiempo_actual"] = 15 # 15 segundos de tiempo
     ruta_texto = "textos_alexa/alexa.txt"
     if os.path.exists(ruta_texto):
         with open(ruta_texto, "r", encoding="utf-8") as f:
@@ -86,7 +87,6 @@ def reproducir_reiniciar_musica():
         if not cargar_mp3_desde_carpeta():
             print("No hay pista MP3 en la carpeta 'pistas'.")
             return
-    # Siempre se detiene y se reinicia desde el principio
     pygame.mixer.music.stop()
     pygame.mixer.music.load(config["ruta_mp3"])
     pygame.mixer.music.play()
@@ -149,8 +149,9 @@ def juego():
     cargando = True
     reloj = pygame.time.Clock()
     
-    boton_alexa = Boton(200, 120, 150, 60, "Alexa", AZUL, activar_alexa)
-    boton_cancion = Boton(600, 120, 100, 60, "Siguiente", AZUL, accion_cancion)
+    # Posiciones de los botones (si se activan)
+    boton_alexa = Boton(250, 50, 120, 50, "Alexa", AZUL, activar_alexa)
+    boton_cancion = Boton(650, 50, 100, 50, "Siguiente", AZUL, accion_cancion)
     
     editando_texto_alexa = False
 
@@ -261,31 +262,39 @@ def juego():
         else:
             pantalla.fill(NEGRO)
 
+        # Logos (si no están en la imagen de fondo, se dibujan aquí)
         try:
             logo_k = pygame.image.load(config["logo_karaoke"])
-            logo_k = pygame.transform.scale(logo_k, (250, 100))
+            logo_k = pygame.transform.scale(logo_k, (200, 80))
             pantalla.blit(logo_k, (20, 20))
             logo_d = pygame.image.load(config["logo_desafios"])
             logo_d = pygame.transform.scale(logo_d, (150, 150))
-            pantalla.blit(logo_d, (1100, 20))
+            pantalla.blit(logo_d, (1110, 20))
         except: pass
 
         if config["modo_pulsadores"]:
             boton_alexa.dibujar(pantalla)
             boton_cancion.dibujar(pantalla)
 
-        # Textos de Puntajes (Solo los números grandes, SIN botones de -1 y +1)
+        # --- NÚMEROS DE PUNTAJE (Ajustados a las cajas negras de tu nueva imagen) ---
+        # Equipo Azul (Derecha)
         texto_azul = fuente_puntaje.render(str(config["puntaje_azul"]), True, BLANCO)
-        pantalla.blit(texto_azul, (1100, 450))
+        # X=1160, Y=150 para que quede centrado en el cuadro negro de la derecha
+        pantalla.blit(texto_azul, (1150, 150)) 
+
+        # Equipo Rojo (Izquierda)
         texto_rojo = fuente_puntaje.render(str(config["puntaje_rojo"]), True, BLANCO)
-        pantalla.blit(texto_rojo, (100, 450))
+        # X=120, Y=150 para que quede centrado en el cuadro negro de la izquierda
+        pantalla.blit(texto_rojo, (120, 150))
 
+        # --- NÚMERO DE CANCIÓN ---
         texto_num = fuente_titulo.render(str(config["numero_cancion"]), True, BLANCO)
-        pantalla.blit(texto_num, (450, 120))
+        pantalla.blit(texto_num, (480, 40))
 
+        # --- TIEMPO (Ajustado justo debajo del reloj 0:05) ---
         if config["tiempo_actual"] > 0:
             texto_tiempo = fuente_texto.render(f"TIEMPO: {int(config['tiempo_actual'])}s", True, ROJO)
-            pantalla.blit(texto_tiempo, (600, 400))
+            pantalla.blit(texto_tiempo, (420, 150))
 
         # --- DIBUJAR MENÚ DE PUNTAJE (Calificador) ---
         if config["menu_puntaje"] is not None:
